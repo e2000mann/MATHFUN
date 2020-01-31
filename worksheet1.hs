@@ -22,13 +22,13 @@ distance x1 y1 x2 y2 = sqrt((y1 - y2) ^ 2 + (x1 - x2) ^ 2)
 
 --6
 threeDifferent :: Int -> Int -> Int -> Bool
-threeDifferent x y z = if (x /= y) && (y /= z) && (x /= z) then True else False
-  -- if (x doesn't equal y) and (y doesn't equal z) and (x doesn't equal z)
+threeDifferent x y z = (x /= y) && (x /= z) && (y /= z)
 
 --7
 divisibleBy :: Int -> Int -> Bool
-divisibleBy x y = if (x `mod` y) == 0 then True else False
+divisibleBy x y = x `mod` y == 0
   --backticks are necessary!!
+  --alternative: mod(x,y)
 
 --8
 isEven :: Int -> Bool
