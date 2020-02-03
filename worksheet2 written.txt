@@ -24,3 +24,22 @@ threeDifferent 1 7 7
   true and false logic
   false logic
 
+Question 3
+howManyEqual 3 5 2
+  3 == 5 && 3 == 2 first guard
+  false && false logic
+  false logic
+  3 == 5 || 3 == 2 || 5 == 2 second guard
+  false || false || false logic
+  false logic
+  otherwise third guard
+  0
+
+howManyEqual 5 2 5
+  5 == 2 && 5 == 5 first guard
+  false && true logic
+  false first guard
+  5 == 2 || 5 == 5 || 2 == 5 second guard
+  false || true || false logic
+  true logic
+  2
