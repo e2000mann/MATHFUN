@@ -1,0 +1,26 @@
+Written Exercises
+Question 1
+sumThree 3 5 7
+  3 + 5 + 7 def of sumThree
+  8 + 7 arithmetic
+  15 arithmetic
+
+sumThree 8 (1 + 3) 2
+  8 + (1 + 3) + 2 def of sumThree
+  8 + 4 + 2 arithmetic
+  12 + 2 arithmetic
+  14
+
+Question 2
+threeDifferent 1 4 2
+  (1 doesn't equal 4) and (1 doesn't equal 2) and (4 doesn't equal 2) def of threeDifferent
+  true and true and true logic
+  true and true logic
+  true logic
+
+threeDifferent 1 7 7
+  (1 doesn't equal 7) and (1 doesn't equal 7) and (7 doesn't equal 7) def of threeDifferent
+  true and true and false logic
+  true and false logic
+  false logic
+
