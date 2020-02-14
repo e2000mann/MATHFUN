@@ -65,6 +65,8 @@ validDate d m
 
 daysInMonth :: Int -> Int -> Int
 daysInMonth m y
+  | m > 12 = 0
+  -- m is not a month
   | m == 2 && y `mod` 4 == 0 = 29
   -- m is february in a leap year
   | m == 2 = 28
