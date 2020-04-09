@@ -1,0 +1,2 @@
+Screen is 80 characters wide & 50 characters long
+Centre (avg of coordinates) is at (40, 25)

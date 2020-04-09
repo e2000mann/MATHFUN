@@ -1,0 +1,14 @@
+Explanations of Functional Programming CW 887818
+
+1) I have used record syntax to create the algebraic type "Place" since it allows each variable to be callable, e.g.
+location x gives the location of Place x
+location (Place "Plymouth" 50.4 (-4.1) [4, 9, 0, 0, 0, 6, 5]) = "Plymouth"
+
+2) For the weather array I have decided to store it as [Float] instead of [Int] since it will make it easier to divide & also allows for more accurate weather measurements to be stored later on.
+
+3) I originally had this function as just "show weather", which gives output like:
+show [1, 2, 3, 4, 5, 6, 7] = "[1,2,3,4,5,6,7]"
+Since the CW specification specifically asks for neat formatting I decided to write a longer function which gives a neater output.
+intercalate (higher level function from Data.List) concatenates the array with a designated seperator, in this case ", "
+map show $ weather gives each value of weather individually as a string, with the dollar sign being used to ensure that it completes this before intercalating the values.
+intercalate ", ".map show $ weather [1, 2, 3, 4, 5, 6, 7] = "1, 2, 3, 4, 5, 6, 7"
