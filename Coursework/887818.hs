@@ -7,6 +7,8 @@
 ------------------------------------------------
 
 -- Imports for higher order functions & data types
+-- System
+import System.Exit
 -- Control
 import Control.Monad
 -- Text
@@ -17,7 +19,10 @@ import Data.List
 import Data.Maybe
 
 -- Custom algebraic type Place
--- explanations.txt 1, 2
+-- explanations:
+-- Record Syntax is used so that functions such as location p are already
+-- defined. Weather is stored in [Float] instead of [Int] for ease in division
+-- & it allows for more specific measurements in future
 data Place = Place { location :: String,
                      long :: Float,
                      lat :: Float,
@@ -46,6 +51,11 @@ testData =
 -- Core Functionality --
 ------------------------
 
+-- Variable Key
+-- p = place
+-- n = longitude (north)
+-- e = latitude (east)
+
 -- i
 placeNames :: [Place] -> [String]
 placeNames placeData = [location p | p <- placeData]
@@ -65,7 +75,11 @@ avgRainfallIn name placeData = avgRainfall p
   where p = findInfo name placeData
 
 -- iii
--- explanations.txt 3
+-- explanation:
+-- show weather came out as "[1,2,3,4,5,6,7]"
+-- intercalate concatenates array with defined seperator (", ")
+-- map show $ weather ([Float] -> [String])
+-- it converts each item in array to string
 weatherToString :: [Float] -> String
 weatherToString weather = intercalate ", " . map show $ weather
 
@@ -106,22 +120,24 @@ replaceLocation old new placeData = new : (removeInfo old placeData)
 
 -- vii
 findDist :: Float -> Float -> Place -> Float
--- n = north w = west
-findDist n w p = sqrt ( (n - long p) ^ 2 + (w - lat p) ^ 2)
+findDist n e p = sqrt ( (n - long p) ^ 2 + (e - lat p) ^ 2)
 
 dryPlaceDists :: Float -> Float -> [Place] -> [Float]
-dryPlaceDists n w placeData = [findDist n w p | p <- dryPlaces]
+dryPlaceDists n e placeData = [findDist n e p | p <- dryPlaces]
   where dryPlaces = allDryPlaces 1 placeData
 
 closestDryPlaceIndex :: Float -> Float -> [Place] -> Int
-closestDryPlaceIndex n w placeData = fromMaybe 0 (elemIndex (minimum(dists)) dists)
-  where dists = dryPlaceDists n w placeData
+closestDryPlaceIndex n e placeData = fromMaybe 0 (elemIndex (minimum(dists)) dists)
+  where dists = dryPlaceDists n e placeData
 
 closestDryPlace :: Float -> Float -> [Place] -> Place
-closestDryPlace n w placeData = (allDryPlaces 1 placeData) !! index
-  where index = closestDryPlaceIndex n w placeData
+closestDryPlace n e placeData = (allDryPlaces 1 placeData) !! index
+  where index = closestDryPlaceIndex n e placeData
 
--- rainfall map
+------------------
+-- Rainfall Map --
+------------------
+
 type ScreenPosition = (Int,Int)
 
 -- Clears the screen
@@ -174,8 +190,20 @@ getAllPositions placeData = [getLocOnScreen p avgLat avgLong | p <- placeData]
   where avgLat = latAvg placeData
         avgLong = longAvg placeData
 
-rainfallMap :: [Place] -> [IO()]
-rainfallMap placeData = [writeAt position "+" | position <- getAllPositions placeData]
+drawRainfallMap :: [Place] -> Float -> Float -> IO()
+drawRainfallMap [] avgLat avgLong = return ()
+drawRainfallMap (p:ps) avgLat avgLong = do
+  writeAt position "+"
+  drawRainfallMap ps avgLat avgLong
+  where
+    position = getLocOnScreen p avgLat avgLong
+
+rainfallMap :: [Place] -> IO()
+rainfallMap placeData = do
+  avgLat <- return (latAvg placeData)
+  avgLong <- return (longAvg placeData)
+  clearScreen
+  drawRainfallMap placeData avgLat avgLong
 
 -------------------
 -- Demo function --
@@ -206,13 +234,15 @@ demo 6 = putStrLn (allPlacesToString newData)
 demo 7 = putStrLn (location closest)
   where
     closest = closestDryPlace 50.9 (-1.3) testData
--- demo 8 = -- display the rainfall map
+-- display the rainfall map
+demo 8 = rainfallMap testData
 
 ------------------------------
 -- User Interface & File IO --
 ------------------------------
 
 -- other IO functions
+
 getInt :: IO Int
 getInt = do
     str <- getLine
@@ -242,7 +272,10 @@ loadMenu = do
   \7) Get the closest location that was dry yesterday\n\
   \8) Draw a rainfall map\n\
   \9) Exit the program"
-  userInput <- getChar
+  -- getChar leaves the enter key (new line char) as an extra input
+  -- which creates a lot of bugs
+  userInputStr <- getLine
+  userInput <- return (head userInputStr)
   if userInput `elem` ['1' .. '9']
     then return userInput
     else do
@@ -251,66 +284,69 @@ loadMenu = do
 
 runMenu :: [Place] -> IO()
 runMenu placeData =
+  -- this is why i need control.monad
   forever $ do
     userInput <- loadMenu
     case userInput of
       -- return names of places
-      '1' -> putStrLn (placeNames placeData)
+      '1' -> do putStrLn (show (placeNames placeData) ++ "\n")
       -- return average rainfall of place
-      '2' -> putStrLn (option2 placeData)
+      '2' -> do option2 placeData
       -- return all names & week weather
-      '3' -> putStrLn (allPlacesToString placeData)
+      '3' -> do putStrLn (allPlacesToString placeData ++ "\n")
       -- return dry places x days ago
-      '4' -> putStrLn (option4 placeData)
+      '4' -> do option4 placeData
       -- update weather
-      '5' -> putStrLn (option5 placeData)
+      '5' -> do option5 placeData
       -- update location
-      '6' -> putStrLn (option6 placeData)
+      '6' -> do option6 placeData
       -- return closest dry place
-      '7' -> putStrLn (option7 placeData)
+      '7' -> do option7 placeData
       -- rainfall map
-      '8' -> writeToFile placeData
+      '8' -> do rainfallMap placeData
       -- exit
-      '9' -> writeToFile placeData
+      '9' -> do writeToFile placeData
 
 -- menu IO : option code
 
-checkLocExists :: String -> [Place] -> Bool
-checkLocExists str placeData = str `elem` locations
+checkLocExists :: String -> [Place] -> IO Bool
+checkLocExists str placeData = return (str `elem` locations)
   where
     locations = [location p | p <- placeData]
 
-option2 :: [Place] -> IO String
+option2 :: [Place] -> IO()
 option2 placeData = do
   putStr "Which location?: "
   location <- getLine
   locationExists <- checkLocExists location placeData
   if locationExists
-    then return (printf "%.2f" (avgRainfallIn location placeData))
-    else
+    then
+      putStrLn (printf "%.2f" (avgRainfallIn location placeData) ++ "\n")
+    else do
       putStrLn "That is not a valid location, try again..."
-      return option2
+      option2 placeData
 
-option4 :: [Place] -> IO String
+option4 :: [Place] -> IO()
 option4 placeData = do
   putStr "How many days ago?: "
   days <- getInt
   if days `elem` [1 .. 7]
-    then return (show placeNames (allDryPlaces days placeData))
-    else
+    then
+      putStrLn (show (placeNames (allDryPlaces days placeData)) ++ "\n")
+    else do
       putStrLn "We do not have data for that many days ago. Try again..."
-      return option4
+      option4 placeData
 
-option5 :: [Place] -> IO String
+option5 :: [Place] -> IO()
 option5 placeData = do
   putStrLn "Type in weather array for today: "
   weatherArray <- getWeatherArray
   if (length weatherArray) == 14
     then
-      return (allPlacesToString (updateAllWeather weatherArray placeData))
-  else
+      putStrLn (allPlacesToString (updateAllWeather weatherArray placeData) ++ "\n")
+  else do
     putStrLn "The weather array was not correct. Try again..."
-    return option5
+    option5 placeData
 
 getPlace :: IO Place
 getPlace = do
@@ -322,32 +358,33 @@ getPlace = do
   e <- getFloat
   putStrLn "Type in the last week's rainfall for this location: "
   weather <- getWeatherArray
-  newPlace <- Place name n e weather
+  -- return is needed to change Place to IO Place
+  newPlace <- return (Place name n e weather)
   return newPlace
 
-option6 :: [Place] -> IO String
+option6 :: [Place] -> IO()
 option6 placeData = do
   putStrLn "What location are you replacing?: "
   old <- getLine
   oldExists <- checkLocExists old placeData
   if oldExists
     then do
-      oldPlace <- findInfo old placeData
+      oldPlace <- return (findInfo old placeData)
       putStrLn "Now please type in the information for the new location..."
       newPlace <- getPlace
-      return (allPlacesToString (replaceLocation oldPlace newPlace placeData))
-    else
+      putStrLn (allPlacesToString (replaceLocation oldPlace newPlace placeData) ++ "\n")
+    else do
       putStrLn "That location doesn't exist! Try again..."
-      return option6
+      option6 placeData
 
-option7 :: [Place] -> IO String
+option7 :: [Place] -> IO()
 option7 placeData = do
   putStrLn "What is your longitude?: "
   n <- getFloat
   putStrLn "What is your latitude?: "
   e <- getFloat
-  closest <- closestDryPlace n e placeData
-  return (location closest)
+  closest <- return (closestDryPlace n e placeData)
+  putStrLn (location closest)
 
 -- file IO
 loadFromFile :: IO [Place]
@@ -358,10 +395,14 @@ loadFromFile = do
 writeToFile :: [Place] -> IO()
 writeToFile placeData = do
   writeFile "places.txt" (show placeData)
+  -- exits program
+  -- gives exception: exitSuccess
+  -- but this means it works
+  exitSuccess
 
 -- main function
 main :: IO()
 main = do
   placeData <- loadFromFile
-  putStrLn (placeNames placeData)
+  putStrLn (show (placeNames placeData))
   runMenu placeData
