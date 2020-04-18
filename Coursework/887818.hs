@@ -71,7 +71,7 @@ avgRainfall :: Place -> Float
 avgRainfall p = sum(weather p) / 7
 
 avgRainfallIn :: String -> [Place] -> Float
-avgRainfallIn name placeData = avgRainfall p
+avgRainfallIn name placeData = sum (weather p) / 7
   where p = findInfo name placeData
 
 -- iii
