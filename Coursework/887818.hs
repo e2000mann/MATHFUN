@@ -216,7 +216,7 @@ demo 1 = putStrLn (show (placeNames testData))
 demo 2 = putStrLn (printf "%.2f" (avgRainfallIn "Cardiff" testData))
 demo 3 = putStrLn (allPlacesToString testData)
 -- -- display the names of all places that were dry two days ago
-demo 4 = putStrLn (show (placeNames (allDryPlaces 2 testData)))
+demo 4 = putStrLn (show (namesOfAllDryPlaces 2 testData))
 -- update the data with most recent rainfall
 --[0,8,0,0,5,0,0,3,4,2,0,8,0,0] (and remove oldest rainfall figures)
 demo 5 = putStrLn (allPlacesToString newData)
@@ -256,7 +256,13 @@ getFloat = do
 getWeatherArray :: IO [Float]
 getWeatherArray = do
   str <- getLine
-  return (read str :: [Float])
+  -- if string does not have brackets
+  -- pretty safe to assume if it doesn't have 1 bracket it won't have the other
+  if not ('[' `elem` str)
+    then do
+      return (read ("[" ++ str ++ "]") :: [Float])
+    else
+      return (read str :: [Float])
 
 -- menu IO
 
@@ -297,9 +303,13 @@ runMenu placeData =
       -- return dry places x days ago
       '4' -> do option4 placeData
       -- update weather
-      '5' -> do option5 placeData
+      '5' -> do
+        newData <- option5 placeData
+        runMenu newData
       -- update location
-      '6' -> do option6 placeData
+      '6' -> do
+        newData <- option6 placeData
+        runMenu newData
       -- return closest dry place
       '7' -> do option7 placeData
       -- rainfall map
@@ -332,18 +342,20 @@ option4 placeData = do
   days <- getInt
   if days `elem` [1 .. 7]
     then
-      putStrLn (show (placeNames (allDryPlaces days placeData)) ++ "\n")
+      putStrLn (show (namesOfAllDryPlaces days placeData) ++ "\n")
     else do
       putStrLn "We do not have data for that many days ago. Try again..."
       option4 placeData
 
-option5 :: [Place] -> IO()
+option5 :: [Place] -> IO [Place]
 option5 placeData = do
-  putStrLn "Type in weather array for today: "
+  putStrLn "Type in weather array for today (14 places): "
   weatherArray <- getWeatherArray
   if (length weatherArray) == 14
-    then
-      putStrLn (allPlacesToString (updateAllWeather weatherArray placeData) ++ "\n")
+    then do
+      newData <- return (updateAllWeather weatherArray placeData)
+      putStrLn (allPlacesToString newData ++ "\n")
+      return newData
   else do
     putStrLn "The weather array was not correct. Try again..."
     option5 placeData
@@ -362,7 +374,7 @@ getPlace = do
   newPlace <- return (Place name n e weather)
   return newPlace
 
-option6 :: [Place] -> IO()
+option6 :: [Place] -> IO [Place]
 option6 placeData = do
   putStrLn "What location are you replacing?: "
   old <- getLine
@@ -372,7 +384,9 @@ option6 placeData = do
       oldPlace <- return (findInfo old placeData)
       putStrLn "Now please type in the information for the new location..."
       newPlace <- getPlace
-      putStrLn (allPlacesToString (replaceLocation oldPlace newPlace placeData) ++ "\n")
+      newData <- return (replaceLocation oldPlace newPlace placeData)
+      putStrLn (allPlacesToString newData ++ "\n")
+      return newData
     else do
       putStrLn "That location doesn't exist! Try again..."
       option6 placeData
